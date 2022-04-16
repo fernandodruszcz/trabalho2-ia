@@ -60,7 +60,7 @@ vector <struct jogada> jogadasPossiveisGanso(char* tab){
                 if(tab[(i-1)*COL + j] == '-'){
                     jogada.des.push_back(make_pair(i - 1, j));
                     jogadas.push_back(jogada);
-                    jogada.des.clear();
+                    jogada.des.clear(); // limpa o vetor de destino para as proximas atribuicoes
                 }
 
                 // baixo
@@ -91,29 +91,39 @@ vector <struct jogada> jogadasPossiveisGanso(char* tab){
     return jogadas;
 }
 
+//
+// Funcao para atribuir todos os possiveis saltos da raposa
+//
+// A cada chamada eh criado um novo tabuleiro movendo a raposa e eliminando o ganso
+// 
 void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct jogada>* jogadas, vector <pair <int, int>> caminho){
     struct jogada jogada;
     jogada.x_ori = x_ori;
     jogada.y_ori = y_ori;
     jogada.tipo = 's';
 
-    
+    // for(int k = 0; k < caminho.size(); k++)
+    //     cout << caminho[k].first << "," << caminho[k].second << " ";
+    // cout << endl;
+    // cout << tab;
 
-    for(int k = 0; k < caminho.size(); k++)
-        cout << caminho[k].first << "," << caminho[k].second << " ";
-    cout << endl;
-    cout << tab;
-    
     // salta para cima
     if( (tab[(i-1)*COL + j] == 'g') && (tab[(i-2)*COL + j] == '-') ){
+        // cria uma copia do tabuleiro recebido para operar em cima
         char tab_copia[LIN*COL];
         copiaTabuileiro(tab, tab_copia);
+
+        // adiciona movimento ao caminho
         caminho.push_back(make_pair(i - 2, j));
         jogada.des = caminho;
         (*jogadas).push_back(jogada);
+
+        // atualiza copia para proximas atribuicoes
         tab_copia[(i-1)*COL + j] = '-';
         tab_copia[(i-2)*COL + j] = 'r';
         tab_copia[i*COL + j]     = '-';
+
+        // recursao
         insereSaltos(tab_copia, x_ori, y_ori, i - 2, j, jogadas, caminho);
         caminho.pop_back();
         
@@ -123,12 +133,15 @@ void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct 
     if( (tab[(i+1)*COL + j] == 'g') && (tab[(i+2)*COL + j] == '-') ){
         char tab_copia[LIN*COL];
         copiaTabuileiro(tab, tab_copia);
+
         caminho.push_back(make_pair(i + 2, j));
         jogada.des = caminho;
         (*jogadas).push_back(jogada);
+
         tab_copia[(i+1)*COL + j] = '-';
         tab_copia[(i+2)*COL + j] = 'r';
         tab_copia[i*COL + j]     = '-';
+
         insereSaltos(tab_copia, x_ori, y_ori, i + 2, j, jogadas, caminho);
         caminho.pop_back();
     }
@@ -137,12 +150,15 @@ void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct 
     if( (tab[i*COL + j - 1] == 'g') && (tab[i*COL + j - 2] == '-') ){
         char tab_copia[LIN*COL];
         copiaTabuileiro(tab, tab_copia);
+
         caminho.push_back(make_pair(i, j - 2));
         jogada.des = caminho;
         (*jogadas).push_back(jogada);
+
         tab_copia[i*COL + j - 1] = '-';
         tab_copia[i*COL + j - 2] = 'r';
         tab_copia[i*COL + j]     = '-';
+
         insereSaltos(tab_copia, x_ori, y_ori, i, j - 2, jogadas, caminho);
         caminho.pop_back();
     }
@@ -151,12 +167,15 @@ void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct 
     if( (tab[i*COL + j + 1] == 'g') && (tab[i*COL + j + 2] == '-') ){
         char tab_copia[LIN*COL];
         copiaTabuileiro(tab, tab_copia);
+
         caminho.push_back(make_pair(i, j + 2));
         jogada.des = caminho;
         (*jogadas).push_back(jogada);
+
         tab_copia[i*COL + j + 1] = '-';
         tab_copia[i*COL + j + 2] = 'r';
         tab_copia[i*COL + j]     = '-';
+
         insereSaltos(tab_copia, x_ori, y_ori, i, j + 2, jogadas, caminho);
         caminho.pop_back();
     }
@@ -215,6 +234,10 @@ vector <struct jogada> jogadasPossiveisRaposa(char *tab){
     return jogadas;
 }
 
+
+//
+// Le dois tabuleiros, verifica se sao simetricos horizontalmente e calcula os movimentos possiveis no primeiro tabuleiro
+//
 int main(){
     char tab1[MAXSTR];
     int desloc = 0;
@@ -249,6 +272,9 @@ int main(){
         cout << "É simétrico\n";
     else
         cout << "Não é simétrico\n";
+
+
+    // Jogadas possiveis
 
     vector <struct jogada> jogadas = jogadasPossiveisGanso(tab1);
     for(int i = 0; i < jogadas.size(); i++){
