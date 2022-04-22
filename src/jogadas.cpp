@@ -8,6 +8,10 @@ using namespace std;
 #define LIN 9
 #define COL 10 // decima coluna sempre tem um '\n'
 
+#define QTDE_MAX_GANSOS 13
+#define QTDE_MAX_BLOCOS 6
+#define QTDE_MAX_NA_PAREDE 13
+
 struct jogada{
     char tipo;
     int x_ori;
@@ -234,6 +238,51 @@ vector <struct jogada> jogadasPossiveisRaposa(char *tab){
     return jogadas;
 }
 
+//
+//
+//
+int estimativa_raposa(char* tab){
+    int qtde_gansos = 0;
+    for(int i = 0; i < LIN; i++){
+        for(int j = 0; j < COL - 2; j++){
+            if(tab[i*COL + j] == 'g')
+                qtde_gansos++;
+        }
+    }
+    return QTDE_MAX_GANSOS - qtde_gansos;
+}
+
+//
+//
+//
+float estimativa_ganso(char* tab){
+    float na_parede = 0;
+    float qtde_gansos = 0;
+    float qtde_blocos = 0;
+    for(int i = 0; i < LIN; i++){
+        for(int j = 0; j < COL - 2; j++){
+            if(tab[i*COL + j] == 'g'){
+                qtde_gansos++;
+                if((tab[i*COL + j + 1] == 'g') &&
+                   (tab[(i+1)*COL + j] == 'g') &&
+                   (tab[(i+1)*COL + j + 1] == 'g'))
+                   qtde_blocos += 1;
+                if((tab[i*COL + j + 1] == '#') || (tab[i*COL + j + 1] == ' ') ||
+                   (tab[i*COL + j - 1] == '#') || (tab[i*COL + j - 1] == ' ') ||
+                   (tab[(i+1)*COL + j] == '#') || (tab[(i+1)*COL + j] == ' ') ||
+                   (tab[(i-1)*COL + j] == '#') || (tab[(i-1)*COL + j] == ' '))
+                   na_parede += 1;
+            }    
+        } // for j
+    } // for i
+
+    float a1 = 0.33333;
+    float a2 = 0.33333;
+    float a3 = 0.33333;
+    cout << "Qtde ganso: " << qtde_gansos << " qtde blocos: " << qtde_blocos << " qtde parede: " << na_parede << endl;
+    return (qtde_gansos/QTDE_MAX_GANSOS)*a1 + (qtde_blocos/QTDE_MAX_BLOCOS)*a2 + (na_parede/QTDE_MAX_NA_PAREDE)*a3;
+
+}
 
 //
 // Le dois tabuleiros, verifica se sao simetricos horizontalmente e calcula os movimentos possiveis no primeiro tabuleiro
@@ -253,51 +302,55 @@ int main(){
     tab1[90] = '\0';
     cout << tab1;
 
-    cin.getline (linha, COL);
+    cout << "Est raposa: " << estimativa_raposa(tab1) << endl;
+    //cout << "Est ganso: " << estimativa_ganso(tab1) << endl;
+    printf("Est ganso: %1.5f\n", estimativa_ganso(tab1));
 
-    char tab2[MAXSTR];
-    desloc = 0;
-    for(int i = 0; i < LIN; i++){
-        cin.getline (linha, COL);
-        linha[COL - 1] = '\n';
-        for(int j = 0; j < COL; j++){
-            tab2[i*COL + j] = linha[j];
-        }
-    }
+    // cin.getline (linha, COL);
 
-    tab2[90] = '\0';
-    cout << tab2;
+    // char tab2[MAXSTR];
+    // desloc = 0;
+    // for(int i = 0; i < LIN; i++){
+    //     cin.getline (linha, COL);
+    //     linha[COL - 1] = '\n';
+    //     for(int j = 0; j < COL; j++){
+    //         tab2[i*COL + j] = linha[j];
+    //     }
+    // }
 
-    if(ehSimetrico(tab1, tab2))
-        cout << "É simétrico\n";
-    else
-        cout << "Não é simétrico\n";
+    // tab2[90] = '\0';
+    // cout << tab2;
+
+    // if(ehSimetrico(tab1, tab2))
+    //     cout << "É simétrico\n";
+    // else
+    //     cout << "Não é simétrico\n";
 
 
     // Jogadas possiveis
 
-    vector <struct jogada> jogadas = jogadasPossiveisGanso(tab1);
-    for(int i = 0; i < jogadas.size(); i++){
-        cout << "g " << jogadas[i].tipo          << " "
-                     << jogadas[i].x_ori         << " " << jogadas[i].y_ori          << " "
-                     << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
-    }
-    cout << endl;
-    jogadas = jogadasPossiveisRaposa(tab1);
-    for(int i = 0; i < jogadas.size(); i++){
-        if(jogadas[i].tipo == 'm'){
-            cout << "r " << jogadas[i].tipo         << " "
-                         << jogadas[i].x_ori        << " " << jogadas[i].y_ori          << " "
-                         << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
-        } else {
-            cout << "r " << jogadas[i].tipo  << " " << jogadas[i].des.size() + 1 << " "
-                         << jogadas[i].x_ori << " " << jogadas[i].y_ori << " ";
-            for(int j = 0; j < jogadas[i].des.size(); j++)
-                cout << jogadas[i].des[j].first << " " << jogadas[i].des[j].second << " ";
-            cout << endl;
-        }
+    // vector <struct jogada> jogadas = jogadasPossiveisGanso(tab1);
+    // for(int i = 0; i < jogadas.size(); i++){
+    //     cout << "g " << jogadas[i].tipo          << " "
+    //                  << jogadas[i].x_ori         << " " << jogadas[i].y_ori          << " "
+    //                  << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
+    // }
+    // cout << endl;
+    // jogadas = jogadasPossiveisRaposa(tab1);
+    // for(int i = 0; i < jogadas.size(); i++){
+    //     if(jogadas[i].tipo == 'm'){
+    //         cout << "r " << jogadas[i].tipo         << " "
+    //                      << jogadas[i].x_ori        << " " << jogadas[i].y_ori          << " "
+    //                      << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
+    //     } else {
+    //         cout << "r " << jogadas[i].tipo  << " " << jogadas[i].des.size() + 1 << " "
+    //                      << jogadas[i].x_ori << " " << jogadas[i].y_ori << " ";
+    //         for(int j = 0; j < jogadas[i].des.size(); j++)
+    //             cout << jogadas[i].des[j].first << " " << jogadas[i].des[j].second << " ";
+    //         cout << endl;
+    //     }
         
-    }
+    // }
 
     return 0;
 }
