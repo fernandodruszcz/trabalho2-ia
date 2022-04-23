@@ -274,7 +274,7 @@ float estimativa_ganso(char* tab){
                    na_parede += 1;
             }
 
-            if( (tab[i*COL + j] == 'r') &&
+            if( (tab[i*COL + j] == 'r') && // situacao em que os gansos ganham
                 ((tab[i*COL + j + 1] == '#') || (tab[i*COL + j + 1] == ' ') || (tab[i*COL + j + 1] == 'g') ) &&
                 ((tab[i*COL + j - 1] == '#') || (tab[i*COL + j - 1] == ' ') || (tab[i*COL + j - 1] == 'g') ) &&
                 ((tab[(i+1)*COL + j] == '#') || (tab[(i+1)*COL + j] == ' ') || (tab[(i+1)*COL + j] == 'g') ) &&
@@ -282,6 +282,9 @@ float estimativa_ganso(char* tab){
                 return 1;
         } // for j
     } // for i
+
+    if(qtde_gansos <= 4) // situacao em que os gansos perdem
+        return 0;
 
     float a1 = 0.33333;
     float a2 = 0.33333;
