@@ -272,7 +272,14 @@ float estimativa_ganso(char* tab){
                    (tab[(i+1)*COL + j] == '#') || (tab[(i+1)*COL + j] == ' ') ||
                    (tab[(i-1)*COL + j] == '#') || (tab[(i-1)*COL + j] == ' '))
                    na_parede += 1;
-            }    
+            }
+
+            if( (tab[i*COL + j] == 'r') &&
+                ((tab[i*COL + j + 1] == '#') || (tab[i*COL + j + 1] == ' ') || (tab[i*COL + j + 1] == 'g') ) &&
+                ((tab[i*COL + j - 1] == '#') || (tab[i*COL + j - 1] == ' ') || (tab[i*COL + j - 1] == 'g') ) &&
+                ((tab[(i+1)*COL + j] == '#') || (tab[(i+1)*COL + j] == ' ') || (tab[(i+1)*COL + j] == 'g') ) &&
+                ((tab[(i-1)*COL + j] == '#') || (tab[(i-1)*COL + j] == ' ') || (tab[(i-1)*COL + j] == 'g') ) )
+                return 1;
         } // for j
     } // for i
 
