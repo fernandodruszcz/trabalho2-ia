@@ -435,8 +435,10 @@ char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
     return prox_jogada;
 }
 
-int main(int argc, char **argv){
 
+int main(int argc, char **argv){
+    char buf[MAXSTR];
+    char prox_jogada[MAXSTR];
 
     tabuleiro_conecta(argc, argv);
     while(1) {
@@ -468,7 +470,7 @@ int main(){
     cout << tab1;
 
 
-    cout << formata_proxima_jogada(tab1, 'g') << endl;
+    cout << formata_proxima_jogada(tab1, 'r') << endl;
     //vector<jogada> possiveis_jogadas = jogadasPossiveisRaposa(tab1);
 
     //for(int i = 0; i < possiveis_jogadas.size(); i++){
