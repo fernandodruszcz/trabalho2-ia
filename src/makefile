@@ -1,2 +1,3 @@
-all: 
-	g++ jogadas.cpp -o jogadas.out
+all:
+	gcc -c tabuleiro.c jogadas.cpp -lstdc++ -lhiredis
+	g++ -o jogadas *.o -lhiredis
