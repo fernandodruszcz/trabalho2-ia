@@ -15,6 +15,7 @@ using namespace std;
 #define QTDE_MAX_GANSOS 13
 #define QTDE_MAX_BLOCOS 6
 #define QTDE_MAX_NA_PAREDE 13
+#define MAX_DEPTH 4
 
 struct jogada{
     char tipo;
@@ -23,18 +24,10 @@ struct jogada{
     vector <pair<int, int>> des; // quando o tipo eh salto, pode haver mais de um destino (varios saltos)
 };
 
-char tabuleiro[MAXSTR] =
-    "#########\n"
-    "#  ggg  #\n"
-    "#  ggg  #\n"
-    "#ggggggg#\n"
-    "#-------#\n"
-    "#---r---#\n"
-    "#  ---  #\n"
-    "#  ---  #\n"
-    "#########\n";
+float max_dist = 1.0;
+float max_jogadas_raposa = 1.0;
+float max_dist_intra = 1.0;
 
-//char prox_jogada[MAXSTR] = {'\0'};
 
 int ehSimetrico(char* tab1, char* tab2){
     for(int i = 0; i < LIN; i++){
@@ -46,12 +39,15 @@ int ehSimetrico(char* tab1, char* tab2){
     return 1;
 }
 
+// faz uma cópia do tabuleiro original
 void copiaTabuileiro(char* original, char* copia){
     for(int i = 0; i < LIN * COL; i++){
         copia[i] = original[i];
     }
 }
 
+// Funcao que atribui todas as próximos jogadas possiveis
+// dos gansos dado um estado do tabuleiro.
 vector <struct jogada> jogadasPossiveisGanso(char* tab){
     vector <struct jogada> jogadas;
     struct jogada jogada;
@@ -100,21 +96,14 @@ vector <struct jogada> jogadasPossiveisGanso(char* tab){
     return jogadas;
 }
 
-//
 // Funcao para atribuir todos os possiveis saltos da raposa
-//
 // A cada chamada eh criado um novo tabuleiro movendo a raposa e eliminando o ganso
-//
 void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct jogada>* jogadas, vector <pair <int, int>> caminho){
     struct jogada jogada;
     jogada.x_ori = x_ori;
     jogada.y_ori = y_ori;
     jogada.tipo = 's';
 
-    // for(int k = 0; k < caminho.size(); k++)
-    //     cout << caminho[k].first << "," << caminho[k].second << " ";
-    // cout << endl;
-    // cout << tab;
 
     // salta para cima
     if( (tab[(i-1)*COL + j] == 'g') && (tab[(i-2)*COL + j] == '-') ){
@@ -191,9 +180,9 @@ void insereSaltos(char *tab, int x_ori, int y_ori, int i, int j, vector <struct 
 
 }
 
+// retorna as possiveis jogadas da raposa
 vector<struct jogada> jogadasPossiveisRaposa(char *tab){
     vector<struct jogada> jogadas;
-    //jogada *jogadas = new jogada[13];
     int x_ori, y_ori;
     struct jogada jogada;
 
@@ -203,9 +192,9 @@ vector<struct jogada> jogadasPossiveisRaposa(char *tab){
                 x_ori = i;
                 y_ori = j;
 
-            } // if == 'r'
-        } // for j
-    } // for i
+            }
+        }
+    }
 
     jogada.x_ori = x_ori;
     jogada.y_ori = y_ori;
@@ -253,25 +242,92 @@ vector<struct jogada> jogadasPossiveisRaposa(char *tab){
     return jogadas;
 }
 
-//
-//
-//
+// retorna a media da distancia da raposa para todos os gansos
+float distancia_media(char *tab){
+    int x_raposa, y_raposa;
+    for(int i = 0; i < LIN; i++){
+        for(int j = 0; j < COL - 2; j++){
+            if(tab[i*COL + j] == 'r'){
+                x_raposa = i;
+                y_raposa = j;
+            }
+        }
+    }
+    float soma = 0;
+    float qnt_ganso = 0;
+    for(int i = 0; i < LIN; i++){
+        for(int j = 0; j < COL - 2; j++){
+            if(tab[i*COL + j] == 'g'){
+                soma += abs(x_raposa - i) + abs(y_raposa - j);
+                qnt_ganso += 1;
+            }
+        }
+    }
+
+    return soma/qnt_ganso;
+}
+
+
+// retorna a media das distancias de todos os gansos
+// para todos os outros gansos
+float distancia_intra_gansos(char *tab){
+    vector<pair<int,int>> gansos_pos;
+    for(int i = 0; i < LIN; i++){
+        for(int j = 0; j < COL - 2; j++){
+            if(tab[i*COL + j] == 'g'){
+                gansos_pos.push_back(make_pair(i,j));
+            }
+        }
+    }
+    float soma = 0;
+    for(auto g : gansos_pos){
+        for(int i = 0; i < LIN; i++){
+            for(int j = 0; j < COL - 2; j++){
+                if(tab[i*COL + j] == 'g'){
+                    soma += abs(g.first - i) + abs(g.second - j);
+
+                }
+            }
+        }
+    }
+    float denominador = 1/(gansos_pos.size()*(gansos_pos.size() - 1));
+
+    return soma * denominador;
+}
+
+
+// estimativa do estado do tabuleiro para a raposa
 float estimativa_raposa(char* tab){
-    int qtde_gansos = 0;
+    float qtde_gansos = 0;
     for(int i = 0; i < LIN; i++){
         for(int j = 0; j < COL - 2; j++){
             if(tab[i*COL + j] == 'g')
                 qtde_gansos++;
         }
     }
-    //cout << qtde_gansos << endl;
-    //cout << QTDE_MAX_GANSOS << endl;
-    return (float)(qtde_gansos/QTDE_MAX_GANSOS);
+
+
+    float a1 = 0.5;
+    float a2 = 0.5;
+    float a3 = 0.25;
+
+    vector<struct jogada> jogadas_raposa;
+    jogadas_raposa = jogadasPossiveisRaposa(tab);
+    float qnt_jogadas_raposa = (float)jogadas_raposa.size();
+    float pulos = 0;
+
+    for(auto jog : jogadas_raposa){
+        if(jog.tipo == 's') pulos += 1.0;
+    }
+
+    float distancia = distancia_media(tab);
+
+    if(distancia > max_dist) max_dist = distancia;
+
+    return (((pulos > 0) * a1) - ((distancia/max_dist) * a2));
 }
 
-//
-//
-//
+// estimativa do estado do tabuleiro para os gansos
 float estimativa_ganso(char* tab){
     float na_parede = 0;
     float qtde_gansos = 0;
@@ -300,22 +356,39 @@ float estimativa_ganso(char* tab){
         } // for j
     } // for i
 
-    if(qtde_gansos <= 4) // situacao em que os gansos perdem
-        return 0;
 
-    float a1 = 0.33333;
-    float a2 = 0.33333;
-    float a3 = 0.33333;
-    //cout << "Qtde ganso: " << qtde_gansos << " qtde blocos: " << qtde_blocos << " qtde parede: " << na_parede << endl;
-    return (qtde_gansos/QTDE_MAX_GANSOS)*a1 + (qtde_blocos/QTDE_MAX_BLOCOS)*a2 + (na_parede/QTDE_MAX_NA_PAREDE)*a3;
+    float a1 = 0.25;
+    float a2 = 0.25;
+    float a3 = 0.5;
+    vector<struct jogada> jogadas_raposa;
+    jogadas_raposa = jogadasPossiveisRaposa(tab);
+    float qnt_jogadas_raposa = (float)jogadas_raposa.size();
+
+    float pulos = 0;
+    for(auto jog : jogadas_raposa){
+        if(jog.tipo == 's') pulos += 1.0;
+    }
+
+    if(pulos > 0) return 1;
+
+    if(qnt_jogadas_raposa > max_jogadas_raposa) max_jogadas_raposa = qnt_jogadas_raposa;
+
+    float distancia_intra = distancia_intra_gansos(tab);
+    if(distancia_intra > max_dist_intra) max_dist_intra = distancia_intra;
+
+    return  (((qnt_jogadas_raposa/max_jogadas_raposa)*a1) -
+            ((distancia_intra/max_dist_intra) * a2) +
+            ((distancia_media(tab)/max_dist) * a3)
+        );
+
+
+
 
 }
 
-
-
+// tabuleiro atualizado com uma jogada 'curr_j'
 char* updated_board(char *tab, jogada curr_j, char *tab_copia){
-    //char tab_copia[MAXSTR];
-    //copiaTabuileiro(tab, tab_copia);
+
     strcpy( tab_copia, tab);
 
     if(curr_j.tipo == 's'){
@@ -333,7 +406,6 @@ char* updated_board(char *tab, jogada curr_j, char *tab_copia){
             curr_j.y_ori = y_des;
         }
 
-        //tab_copia[(curr_j.x_ori) * COL + curr_j.y_ori] = '-';
         tab_copia[curr_j.des.back().first * COL + curr_j.des.back().second] = 'r';
 
     }else{
@@ -344,14 +416,13 @@ char* updated_board(char *tab, jogada curr_j, char *tab_copia){
         tab_copia[x_des * COL + y_des] = animal;
     }
 
-    //return tab_copia;
 }
 
-
-float calcula_proxima_jogada(char *board, char turn, int depth){
+// calcula o valor da arvore de jogadas, implementa o MIN-MAX
+float calcula_proxima_jogada(char *board, char turn, int depth, char lado_original){
 
     if(depth == 0){
-        return estimativa_ganso(board);
+        return(estimativa_raposa(board) + estimativa_ganso(board));
     }
     else{
         vector<struct jogada> possiveis_jogadas;
@@ -367,16 +438,13 @@ float calcula_proxima_jogada(char *board, char turn, int depth){
             possiveis_jogadas = jogadasPossiveisGanso(board);
             next_turn = 'r';
         }
-        //cout << possiveis_jogadas.size() << endl;
         float *estimativas = new float[possiveis_jogadas.size()];
         jogada curr_j;
         char new_board[MAXSTR];
         for(int i = 0; i < possiveis_jogadas.size(); i++){
             curr_j = possiveis_jogadas[i];
             updated_board(board, curr_j, new_board);
-            //cout << new_board << endl;
-            estimativas[i] = calcula_proxima_jogada(board, next_turn, depth - 1);
-            //estimativas[i] = calcula_proxima_jogada(updated_board(board, curr_j), next_turn, depth - 1);
+            estimativas[i] = calcula_proxima_jogada(board, next_turn, depth - 1, lado_original);
         }
         if(raposa) return *max_element(estimativas, estimativas + possiveis_jogadas.size());
         else return *min_element(estimativas, estimativas + possiveis_jogadas.size());
@@ -384,7 +452,9 @@ float calcula_proxima_jogada(char *board, char turn, int depth){
 
 }
 
-char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
+// calcula a melhor jogada de acordo com o algoritmo MIN-MAX e a heuristica
+// e formata no padrão de jogadas especificados retornando uma string ex: 'r m 4 4 4 3'
+char* formata_proxima_jogada(char *tab, char *prox_jogada, int max_depth, char lado){
 
     int ind = 0;
     while(tab[ind] != '#'){
@@ -406,13 +476,11 @@ char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
 
     float *estimativas = new float[possiveis_jogadas.size()];
     char new_board[MAXSTR];
-    for(int i = 0; i < possiveis_jogadas.size(); i++){
-        //cout << updated_board(tab, possiveis_jogadas[i]) << endl;
-        updated_board(tab, possiveis_jogadas[i], new_board);
-        //cout << new_board <<  endl;
 
-        estimativas[i] = calcula_proxima_jogada(new_board, next_turn, 5);
-        //cout << estimativas[i] << endl;
+    for(int i = 0; i < possiveis_jogadas.size(); i++){
+        updated_board(tab, possiveis_jogadas[i], new_board);
+
+        estimativas[i] = calcula_proxima_jogada(new_board, next_turn, max_depth, lado);
     }
 
     float highest = estimativas[0];
@@ -429,11 +497,13 @@ char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
                 index = i;
             }
         }
+        if(estimativas[i] == highest){
+            index = rand() % possiveis_jogadas.size();
+        }
 
     }
 
-    //prox_jogada[0] = '\0';
-    memset(prox_jogada,0,MAXSTR);
+    prox_jogada[0] = '\0';
     char *tipo_jogada;
     char x_inicial, y_inicial, lado_meu;
     char b1, b2;
@@ -442,13 +512,16 @@ char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
     lado_meu = lado;
 
 
-    //strcat(prox_jogada, &possiveis_jogadas[index].tipo);
 
-    sprintf(prox_jogada, "%s %c", prox_jogada, lado);
+    sprintf(prox_jogada, "%s%c", prox_jogada, lado);
     sprintf(prox_jogada, "%s %c", prox_jogada, possiveis_jogadas[index].tipo);
+    if(possiveis_jogadas[index].tipo == 's'){
+        char n_tuplas = (possiveis_jogadas[index].des.size() + 1) + '0';
+        sprintf(prox_jogada,"%s %c", prox_jogada, n_tuplas);
+    }
     sprintf(prox_jogada, "%s %c", prox_jogada, x_inicial);
-    //cout << y_inicial << endl;
     sprintf(prox_jogada, "%s %c", prox_jogada, y_inicial);
+
 
 
 
@@ -467,93 +540,11 @@ char* formata_proxima_jogada(char *tab, char *prox_jogada,char lado){
 int main(int argc, char **argv){
     char buf[MAXSTR];
     char prox_jogada[MAXSTR];
-
     tabuleiro_conecta(argc, argv);
     while(1) {
       tabuleiro_recebe(buf);
-      //cout << "----------" << endl;
-      //cout << buf << endl;
-      //cout << "----------" << endl;
-      formata_proxima_jogada(buf, prox_jogada, *argv[1]);
-      cout << prox_jogada << endl;
+      formata_proxima_jogada(buf, prox_jogada, MAX_DEPTH, *argv[1]);
       tabuleiro_envia(prox_jogada);
     }
 
 }
-
-/*
-//
-// Le dois tabuleiros, verifica se sao simetricos horizontalmente e calcula os movimentos possiveis no primeiro tabuleiro
-//
-int main(){
-    char tab1[MAXSTR];
-    int desloc = 0;
-    char linha[COL];
-    for(int i = 0; i < LIN; i++){
-        cin.getline (linha, COL);
-        linha[COL - 1] = '\n';
-        for(int j = 0; j < COL; j++){
-            tab1[i*COL + j] = linha[j];
-        }
-    }
-
-    tab1[90] = '\0';
-    cout << tab1;
-
-
-    cout << formata_proxima_jogada(tab1, 'r') << endl;
-    //vector<jogada> possiveis_jogadas = jogadasPossiveisRaposa(tab1);
-
-    //for(int i = 0; i < possiveis_jogadas.size(); i++){
-        //estimativas[i] = calcula_proxima_jogada(updated_board(board, possiveis_jogadas[i]), next_turn, depth - 1);
-    //    cout << updated_board(tab1, possiveis_jogadas[i]) << endl;
-    //}
-    // cin.getline (linha, COL);
-
-    // char tab2[MAXSTR];
-    // desloc = 0;
-    // for(int i = 0; i < LIN; i++){
-    //     cin.getline (linha, COL);
-    //     linha[COL - 1] = '\n';
-    //     for(int j = 0; j < COL; j++){
-    //         tab2[i*COL + j] = linha[j];
-    //     }
-    // }
-
-    // tab2[90] = '\0';
-    // cout << tab2;
-
-    // if(ehSimetrico(tab1, tab2))
-    //     cout << "É simétrico\n";
-    // else
-    //     cout << "Não é simétrico\n";
-
-
-    // Jogadas possiveis
-
-    // vector <struct jogada> jogadas = jogadasPossiveisGanso(tab1);
-    // for(int i = 0; i < jogadas.size(); i++){
-    //     cout << "g " << jogadas[i].tipo          << " "
-    //                  << jogadas[i].x_ori         << " " << jogadas[i].y_ori          << " "
-    //                  << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
-    // }
-    // cout << endl;
-    // jogadas = jogadasPossiveisRaposa(tab1);
-    // for(int i = 0; i < jogadas.size(); i++){
-    //     if(jogadas[i].tipo == 'm'){
-    //         cout << "r " << jogadas[i].tipo         << " "
-    //                      << jogadas[i].x_ori        << " " << jogadas[i].y_ori          << " "
-    //                      << jogadas[i].des[0].first << " " << jogadas[i].des[0].second << endl;
-    //     } else {
-    //         cout << "r " << jogadas[i].tipo  << " " << jogadas[i].des.size() + 1 << " "
-    //                      << jogadas[i].x_ori << " " << jogadas[i].y_ori << " ";
-    //         for(int j = 0; j < jogadas[i].des.size(); j++)
-    //             cout << jogadas[i].des[j].first << " " << jogadas[i].des[j].second << " ";
-    //         cout << endl;
-    //     }
-
-    // }
-
-    return 0;
-}
-*/
